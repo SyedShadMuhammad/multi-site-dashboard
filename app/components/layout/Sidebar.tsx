@@ -18,7 +18,8 @@ import {
   Award,
   AlertCircle,
   MessageSquare,
-  FileText
+  FileText,
+  ShieldCheck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -52,13 +53,14 @@ export default function Sidebar({ currentSite }: SidebarProps) {
 
   if (site === 'ict' || site.includes('ict.edu')) {
     return [
-      { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
-      { name: 'Certificate', href: getSiteHref('/dashboard/ict/certificate'), icon: Award },
-      { name: 'Complaints', href: getSiteHref('/dashboard/ict/complaints'), icon: AlertCircle },
-      { name: 'Feedback Submission', href: getSiteHref('/dashboard/ict/feedback-submission'), icon: MessageSquare },
-      { name: 'Hard Copy Request', href: getSiteHref('/dashboard/ict/hard-copy-request'), icon: FileText },
-      { name: 'ICT Leads', href: getSiteHref('/dashboard/ict/leads'), icon: Users },
-    ];
+    { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
+  { name: 'Certificate', href: getSiteHref('/dashboard/ict/certificate'), icon: Award },
+  { name: 'Complaints', href: getSiteHref('/dashboard/ict/complaints'), icon: AlertCircle },
+  { name: 'Feedback Submission', href: getSiteHref('/dashboard/ict/feedback-submission'), icon: MessageSquare },
+  { name: 'Hard Copy Request', href: getSiteHref('/dashboard/ict/hard-copy-request'), icon: FileText },
+  { name: 'ICT Leads', href: getSiteHref('/dashboard/ict/leads'), icon: Users },
+  { name: 'MOFA Request', href: getSiteHref('/dashboard/ict/mofa-requests'), icon: ShieldCheck },
+];
   }
 
   if (site.includes('ictbusinessschool') || site === 'ibs' || site === 'ict-business') {

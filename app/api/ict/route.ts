@@ -5,14 +5,14 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const site = searchParams.get('site') || 'ict';
-    const type = searchParams.get('type'); // certificates, complaints, feedback, hard-copy, leads
+    const type = searchParams.get('type'); // certificates, complaints, feedback, hard-copy, leads, mofa
 
     const supabase = getSupabaseAdminClient(site);
 
     let tableName = '';
 
     if (type === 'Certificates') {
-      tableName = 'certificates';
+      tableName = 'Certificates';
     } else if (type === 'complaints') {
       tableName = 'complaints';
     } else if (type === 'feedback') {
@@ -21,6 +21,8 @@ export async function GET(request: Request) {
       tableName = 'hard_copy_requests';
     } else if (type === 'leads' || type === 'ict-leads') {
       tableName = 'ict_leads';
+    } else if (type === 'mofa' || type === 'mofa-requests' || type === 'mofaRequests') {
+      tableName = 'mofa_requests';
     } else {
       return NextResponse.json({ success: true, data: [] });
     }

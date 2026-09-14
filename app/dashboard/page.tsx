@@ -27,6 +27,7 @@ export default function OverviewPage() {
             { key: 'feedback', table: 'feedback_submissions' },
             { key: 'hardCopy', table: 'hard_copy_requests' },
             { key: 'leads', table: 'ict_leads' },
+            { key: 'mofa', table: 'mofa_requests' }, // <-- Yeh line add ki hai
           ];
 
           for (const item of tables) {
@@ -51,12 +52,13 @@ export default function OverviewPage() {
           }
         } 
         // 3. ICT Business School
-        else if (site.includes('ictbusinessschool') || site === 'ibs' || site === 'ict-business') {
-          const { count, error } = await supabase
-            .from('ibs_contacts')
-            .select('*', { count: 'exact', head: true });
-          newStats.contact = error ? 0 : count || 0;
-        } 
+        // 3. ICT Business School
+else if (site.includes('ictbusinessschool') || site === 'ibs' || site === 'ict-business') {
+  const { count, error } = await supabase
+    .from('contact_messages') // <--- Yeh change karna hai
+    .select('*', { count: 'exact', head: true });
+  newStats.contact = error ? 0 : count || 0;
+}
         // 4. IDT Pakistan
         else if (site.includes('idt') || site === 'idtpakistan') {
           const { count, error } = await supabase
@@ -95,7 +97,7 @@ export default function OverviewPage() {
   }, [site, supabase]);
 
   // Render UI based on active site
-  if (site === 'ict' || site.includes('ict.edu')) {
+ if (site === 'ict' || site.includes('ict.edu')) {
     return (
       <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
         <div>
@@ -108,11 +110,11 @@ export default function OverviewPage() {
           <StatCard title="Feedback Submission" value={loading ? '...' : stats.feedback || 0} />
           <StatCard title="Hard Copy Request" value={loading ? '...' : stats.hardCopy || 0} />
           <StatCard title="ICT Leads" value={loading ? '...' : stats.leads || 0} />
+          <StatCard title="MOFA Requests" value={loading ? '...' : stats.mofa || 0} /> {/* <-- Yeh line add ki hai */}
         </div>
       </div>
-    );
-  }
-
+    )
+}
   if (site.includes('baco') || site === 'bacoconsultants') {
     return (
       <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
