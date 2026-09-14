@@ -1,111 +1,122 @@
-// app/dashboard/contact-submissions/page.tsx
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { SITES_CONFIG } from '@/config/sites.config';
-import { Search, Mail, MessageSquare, Phone, Calendar } from 'lucide-react';
 
 export default function ContactSubmissionsPage() {
   const searchParams = useSearchParams();
   const currentSite = searchParams.get('site') || 'ict';
-  const site = SITES_CONFIG[currentSite] || SITES_CONFIG['ict'];
+  
+  // Header search bar se search query read karna
+  const searchTerm = searchParams.get('search')?.toLowerCase() || '';
+  
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [searchQuery, setSearchQuery] = useState('');
+useEffect(() => {
+    async function fetchContacts() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/contact-submissions?site=${currentSite}`);
+        
+        // Check karein ke response JSON hai ya HTML error
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("API route not found or returned non-JSON response (404/500).");
+        }
 
-  const messagesData: Record<string, Array<{ id: number; name: string; email: string; phone: string; subject: string; message: string; date: string }>> = {
-    ict: [
-      { id: 1, name: 'Tariq Jamil', email: 'tariq@gmail.com', phone: '+92 300 1122334', subject: 'Course Inquiry', message: 'Assalam-o-Alaikum, I want to know about the upcoming batch timings for Web Development.', date: '09 Sep 2026' },
-      { id: 2, name: 'Sadia Aman', email: 'sadia.a@yahoo.com', phone: '+92 321 5566778', subject: 'Fee Structure', message: 'Kindly send me the detailed fee structure for BS Computer Science.', date: '08 Sep 2026' },
-    ],
-    idt: [
-      { id: 1, name: 'Waqar Younis', email: 'waqar@gmail.com', phone: '+92 301 9988776', subject: 'Corporate Training', message: 'We need corporate digital marketing training for our team members.', date: '08 Sep 2026' },
-    ],
-    paf: [
-      { id: 1, name: 'Rizwan Ahmed', email: 'rizwan@gmail.com', phone: '+92 302 4433221', subject: 'Admission Criteria', message: 'What are the physical standards required for aviation courses?', date: '07 Sep 2026' },
-    ],
-  };
+        const result = await res.json();
+        
+        if (result.success) {
+          setContacts(result.data || []);
+        } else {
+          console.error('API Error:', result.error);
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+      setLoading(false);
+    }
 
-  const currentList = messagesData[currentSite] || messagesData['ict'];
-  const filteredList = currentList.filter(item => 
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    fetchContacts();
+  }, [currentSite]);
+  // Search Filtering Logic
+  const filteredContacts = contacts.filter((item) => {
+    if (!searchTerm) return true;
+    
+    const name = (item.name || item.full_name || item['Full Name'] || '').toLowerCase();
+    const email = (item.email || item['Email'] || '').toLowerCase();
+    const phone = (item.phone || item['Phone'] || '').toLowerCase();
+    const message = (item.message || item.subject || '').toLowerCase();
+
+    return (
+      name.includes(searchTerm) ||
+      email.includes(searchTerm) ||
+      phone.includes(searchTerm) ||
+      message.includes(searchTerm)
+    );
+  });
 
   return (
-    <div className="space-y-6">
-      <div className={`bg-white p-6 rounded-2xl shadow-sm border ${site.theme.borderAccent} flex flex-col md:flex-row items-center justify-between gap-6`}>
-        <div className="flex flex-col text-left">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Inbox Management</span>
-          <h1 className="text-2xl font-black text-gray-900 mt-0.5">Contact Form Submissions</h1>
-          <p className={`text-sm font-bold mt-1 ${site.theme.textAccent}`}>{site.name}</p>
-        </div>
-
-        <div className="flex items-center shrink-0 w-full md:w-auto justify-end">
-          <div className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white ${site.theme.primaryBg} shadow-md`}>
-            {site.name}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h3 className="text-lg font-bold text-gray-900">Incoming Messages ({site.name})</h3>
-          
-          <div className="relative w-full sm:w-80">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
-              <Search className="w-4 h-4" />
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Contact Submissions — {currentSite.toUpperCase()}</h1>
+        <div className="flex items-center gap-3">
+          {searchTerm && (
+            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+              Filtering for: &quot;{searchTerm}&quot;
             </span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search messages..."
-              className={`w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-offset-0 transition-all ${site.theme.borderAccent} focus:ring-blue-500/20`}
-            />
+          )}
+          <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-3 py-1 rounded-full">
+            Total Records: {filteredContacts.length} {filteredContacts.length !== contacts.length && `(of ${contacts.length})`}
+          </span>
+        </div>
+      </div>
+      
+      {loading ? (
+        <div className="flex justify-center items-center py-20 text-gray-500">
+          Loading contact submissions...
+        </div>
+      ) : filteredContacts.length === 0 ? (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800">
+          <p className="font-bold">No records found!</p>
+          <p className="text-sm mt-1">
+            {searchTerm 
+              ? `Aapke search query "${searchTerm}" se koi contact match nahi hua.` 
+              : `Is site ke liye koi contact submissions mojood nahi hain.`}
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-600 font-semibold">
+                  <th className="p-4">ID</th>
+                  <th className="p-4">Name</th>
+                  <th className="p-4">Email</th>
+                  <th className="p-4">Phone</th>
+                  <th className="p-4">Message / Subject</th>
+                  <th className="p-4">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                {filteredContacts.map((item, idx) => (
+                  <tr key={item.id || idx} className="hover:bg-gray-50/80 transition-colors">
+                    <td className="p-4 text-gray-500 font-medium">#{item.id || idx + 1}</td>
+                    <td className="p-4 font-semibold text-gray-900">{item.name || item.full_name || item['Full Name'] || 'N/A'}</td>
+                    <td className="p-4 text-gray-600">{item.email || item['Email'] || 'N/A'}</td>
+                    <td className="p-4 text-gray-600">{item.phone || item['Phone'] || 'N/A'}</td>
+                    <td className="p-4 text-gray-600 max-w-xs truncate">{item.message || item.subject || 'N/A'}</td>
+                    <td className="p-4 text-xs text-gray-400">
+                      {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-        
-        {filteredList.length > 0 ? (
-          <div className="space-y-4">
-            {filteredList.map((msg) => (
-              <div key={msg.id} className="p-5 rounded-2xl border border-gray-100 bg-gray-50/40 hover:bg-gray-50 transition-all space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl ${site.theme.primaryBg} text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0`}>
-                      {msg.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-sm">{msg.name}</h4>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                        <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {msg.email}</span>
-                        <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {msg.phone}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-gray-400 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" /> {msg.date}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="inline-block text-[11px] font-black uppercase px-2.5 py-0.5 rounded-md bg-gray-200/60 text-gray-700 mb-1.5">
-                    Subject: {msg.subject}
-                  </span>
-                  <p className="text-sm text-gray-600 font-medium bg-white p-3.5 rounded-xl border border-gray-100">
-                    &ldquo;{msg.message}&rdquo;
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="border border-gray-100 rounded-xl p-12 text-center bg-gray-50/50">
-            <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-gray-500">No contact form messages found.</p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

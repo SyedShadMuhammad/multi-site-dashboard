@@ -7,10 +7,14 @@ import {
   LayoutDashboard, 
   Mail,
   Users, 
-  GraduationCap, // <--- GraduationCap import kar liya
+  GraduationCap, 
   Briefcase, 
   Settings, 
-  LogOut 
+  LogOut,
+  BookOpen,      // Courses ke liye icon
+  ShoppingCart,  // Orders ke liye icon
+  PackageCheck,  // Order Items ke liye icon
+  CreditCard     // Payments ke liye icon
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,11 +31,21 @@ export default function Sidebar({ currentSite }: SidebarProps) {
     return `${path}?site=${currentSite}`;
   };
 
-  const navItems = [
+  // Agar site 'ictbusinessuk' hai toh yeh ictbusinessuk wale 6 menu items dikhao
+  const navItems = currentSite === 'ictbusinessuk' ? [
+   { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
+   { name: 'Contact', href: getSiteHref('/dashboard/ictbusinessuk/contact'), icon: Mail },
+    { name: 'Courses', href: getSiteHref('/dashboard/ictbusinessuk/courses'), icon: BookOpen },
+    { name: 'Customers', href: getSiteHref('/dashboard/ictbusinessuk/customers'), icon: Users },
+    { name: 'Orders', href: getSiteHref('/dashboard/ictbusinessuk/orders'), icon: ShoppingCart },
+    { name: 'Order Items', href: getSiteHref('/dashboard/ictbusinessuk/order-items'), icon: PackageCheck },
+    { name: 'Payments', href: getSiteHref('/dashboard/ictbusinessuk/payments'), icon: CreditCard },
+  ] : [
+    // Baaki companies ke liye purane standard items
     { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
     { name: 'Contact Submissions', href: getSiteHref('/dashboard/contact-submissions'), icon: Mail },
     { name: 'Sales Leads', href: getSiteHref('/dashboard/sales-leads'), icon: Users },
-    { name: 'Admissions', href: getSiteHref('/dashboard/admissions'), icon: GraduationCap }, // <--- Yahan UserCheck ki jagah GraduationCap laga diya
+    { name: 'Admissions', href: getSiteHref('/dashboard/admissions'), icon: GraduationCap },
     { name: 'Careers', href: getSiteHref('/dashboard/careers'), icon: Briefcase },
     { name: 'Settings', href: getSiteHref('/dashboard/settings'), icon: Settings },
   ];

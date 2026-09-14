@@ -25,7 +25,7 @@ export const SITES_CONFIG: Record<string, SiteConfig> = {
     logoUrl: '/ict.favicon.ico',
     theme: {
       sidebarBg: 'bg-slate-950',
-      primaryBg: 'bg-emerald-600',       // Official website ka green color
+      primaryBg: 'bg-emerald-600',      // Official website ka green color
       primaryHover: 'hover:bg-emerald-700',
       textAccent: 'text-emerald-600',
       badgeBg: 'bg-emerald-100 text-emerald-800',
@@ -40,7 +40,7 @@ export const SITES_CONFIG: Record<string, SiteConfig> = {
     logoUrl: '/ictb.favicon.ico',
     theme: {
       sidebarBg: 'bg-slate-950',
-      primaryBg: 'bg-indigo-600',       // Business school ke liye Indigo/Blue mix
+      primaryBg: 'bg-indigo-600',      // Business school ke liye Indigo/Blue mix
       primaryHover: 'hover:bg-indigo-700',
       textAccent: 'text-indigo-600',
       badgeBg: 'bg-indigo-100 text-indigo-800',
@@ -75,6 +75,22 @@ export const SITES_CONFIG: Record<string, SiteConfig> = {
       textAccent: 'text-blue-600',
       badgeBg: 'bg-blue-100 text-blue-800',
       borderAccent: 'border-blue-500',
+    },
+  },
+  // Yeh rahi aapki nayi company ICT Business UK
+  ictbusinessuk: {
+    id: 'ictbusinessuk',
+    name: 'ICT Business UK',
+    domain: 'ictbusinessuk.com',
+    logoText: 'ICT BUSINESS UK',
+    logoUrl: '/ict.uk.favicon.jpeg',
+    theme: {
+      sidebarBg: 'bg-slate-950',
+      primaryBg: 'bg-violet-600',       // UK branch ke liye Violet theme
+      primaryHover: 'hover:bg-violet-700',
+      textAccent: 'text-violet-600',
+      badgeBg: 'bg-violet-100 text-violet-800',
+      borderAccent: 'border-violet-500',
     },
   },
 };
