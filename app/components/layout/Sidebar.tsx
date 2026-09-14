@@ -14,7 +14,11 @@ import {
   BookOpen,      // Courses ke liye icon
   ShoppingCart,  // Orders ke liye icon
   PackageCheck,  // Order Items ke liye icon
-  CreditCard     // Payments ke liye icon
+  CreditCard,    // Payments ke liye icon
+  Award,
+  AlertCircle,
+  MessageSquare,
+  FileText
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,24 +35,60 @@ export default function Sidebar({ currentSite }: SidebarProps) {
     return `${path}?site=${currentSite}`;
   };
 
-  // Agar site 'ictbusinessuk' hai toh yeh ictbusinessuk wale 6 menu items dikhao
-  const navItems = currentSite === 'ictbusinessuk' ? [
-   { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
-   { name: 'Contact', href: getSiteHref('/dashboard/ictbusinessuk/contact'), icon: Mail },
-    { name: 'Courses', href: getSiteHref('/dashboard/ictbusinessuk/courses'), icon: BookOpen },
-    { name: 'Customers', href: getSiteHref('/dashboard/ictbusinessuk/customers'), icon: Users },
-    { name: 'Orders', href: getSiteHref('/dashboard/ictbusinessuk/orders'), icon: ShoppingCart },
-    { name: 'Order Items', href: getSiteHref('/dashboard/ictbusinessuk/order-items'), icon: PackageCheck },
-    { name: 'Payments', href: getSiteHref('/dashboard/ictbusinessuk/payments'), icon: CreditCard },
-  ] : [
-    // Baaki companies ke liye purane standard items
+ const getNavItems = (rawSite: string) => {
+  const site = rawSite?.toLowerCase().trim() || '';
+
+  if (site === 'ictbusinessuk') {
+    return [
+      { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
+      { name: 'Contact', href: getSiteHref('/dashboard/ictbusinessuk/contact'), icon: Mail },
+      { name: 'Courses', href: getSiteHref('/dashboard/ictbusinessuk/courses'), icon: BookOpen },
+      { name: 'Customers', href: getSiteHref('/dashboard/ictbusinessuk/customers'), icon: Users },
+      { name: 'Orders', href: getSiteHref('/dashboard/ictbusinessuk/orders'), icon: ShoppingCart },
+      { name: 'Order Items', href: getSiteHref('/dashboard/ictbusinessuk/order-items'), icon: PackageCheck },
+      { name: 'Payments', href: getSiteHref('/dashboard/ictbusinessuk/payments'), icon: CreditCard },
+    ];
+  }
+
+  if (site === 'ict' || site.includes('ict.edu')) {
+    return [
+      { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
+      { name: 'Certificate', href: getSiteHref('/dashboard/ict/certificate'), icon: Award },
+      { name: 'Complaints', href: getSiteHref('/dashboard/ict/complaints'), icon: AlertCircle },
+      { name: 'Feedback Submission', href: getSiteHref('/dashboard/ict/feedback-submission'), icon: MessageSquare },
+      { name: 'Hard Copy Request', href: getSiteHref('/dashboard/ict/hard-copy-request'), icon: FileText },
+      { name: 'ICT Leads', href: getSiteHref('/dashboard/ict/leads'), icon: Users },
+    ];
+  }
+
+  if (site.includes('ictbusinessschool') || site === 'ibs' || site === 'ict-business') {
+  return [
     { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
-    { name: 'Contact Submissions', href: getSiteHref('/dashboard/contact-submissions'), icon: Mail },
-    { name: 'Sales Leads', href: getSiteHref('/dashboard/sales-leads'), icon: Users },
-    { name: 'Admissions', href: getSiteHref('/dashboard/admissions'), icon: GraduationCap },
-    { name: 'Careers', href: getSiteHref('/dashboard/careers'), icon: Briefcase },
-    { name: 'Settings', href: getSiteHref('/dashboard/settings'), icon: Settings },
+    { name: 'Contact', href: getSiteHref('/dashboard/ictbusinessschool/contact'), icon: Mail },
   ];
+}
+
+  if (site.includes('baco') || site === 'bacoconsultants') {
+    return [
+      { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
+      { name: 'BACO Applications', href: getSiteHref('/dashboard/bacoconsultants/applications'), icon: FileText },
+      { name: 'BACO Contact', href: getSiteHref('/dashboard/bacoconsultants/contact'), icon: Mail },
+    ];
+  }
+
+  if (site.includes('idt') || site === 'idtpakistan') {
+    return [
+      { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
+      { name: 'Contact', href: getSiteHref('/dashboard/idtpakistan/contact'), icon: Mail },
+    ];
+  }
+
+  return [
+    { name: 'Overview', href: getSiteHref('/dashboard'), icon: LayoutDashboard },
+  ];
+};
+
+  const navItems = getNavItems(currentSite);
 
   return (
     <aside className="w-64 bg-slate-950 text-gray-300 flex flex-col justify-between border-r border-slate-800 h-screen select-none shrink-0">

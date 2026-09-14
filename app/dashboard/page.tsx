@@ -1,136 +1,185 @@
-// app/dashboard/page.tsx
 'use client';
-import { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { SITES_CONFIG } from '@/config/sites.config';
-import Image from 'next/image';
-import { Loader2 } from 'lucide-react';
+import { getSupabaseClientForSite } from '@/lib/supabase/multiClients';
 
-export default function DashboardOverview() {
+export default function OverviewPage() {
   const searchParams = useSearchParams();
-  const currentSite = searchParams.get('site') || 'ict';
-  const site = SITES_CONFIG[currentSite] || SITES_CONFIG['ict'];
+  const rawSite = searchParams.get('site') || 'ictbusinessuk';
+  const site = rawSite.toLowerCase().trim();
+  
+  const supabase = getSupabaseClientForSite(site); 
 
-  const [stats, setStats] = useState({
-    contacts: 0,
-    courses: 0,
-    customers: 0,
-    orders: 0,
-    orderItems: 0,
-    payments: 0,
-  });
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    async function fetchCounts() {
+    async function fetchDashboardCounts() {
+      setLoading(true);
+      const newStats: Record<string, number> = {};
+
       try {
-        setLoading(true);
-        const types = ['contact', 'courses', 'customers', 'orders', 'order-items', 'payments'];
-        
-        const results = await Promise.all(
-          types.map(async (type) => {
-            const res = await fetch(`/api/ictbusinessuk?site=${currentSite}&type=${type}`);
-            const json = await res.json();
-            return { type, count: json.success ? (json.data?.length || 0) : 0 };
-          })
-        );
+        // 1. ICT Education (ict)
+        if (site === 'ict' || site.includes('ict.edu')) {
+          const tables = [
+            { key: 'certificates', table: 'certificates' },
+            { key: 'complaints', table: 'complaints' },
+            { key: 'feedback', table: 'feedback_submissions' },
+            { key: 'hardCopy', table: 'hard_copy_requests' },
+            { key: 'leads', table: 'ict_leads' },
+          ];
 
-        const newStats: any = {};
-        results.forEach((item) => {
-          newStats[item.type] = item.count;
-        });
+          for (const item of tables) {
+            const { count, error } = await supabase
+              .from(item.table)
+              .select('*', { count: 'exact', head: true });
+            newStats[item.key] = error ? 0 : count || 0;
+          }
+        } 
+        // 2. BACO Consultants
+        else if (site.includes('baco') || site === 'bacoconsultants') {
+          const tables = [
+            { key: 'applications', table: 'baco_applications' },
+            { key: 'contact', table: 'baco_contacts' },
+          ];
 
-        setStats({
-          contacts: newStats['contact'] || 0,
-          courses: newStats['courses'] || 0,
-          customers: newStats['customers'] || 0,
-          orders: newStats['orders'] || 0,
-          orderItems: newStats['order-items'] || 0,
-          payments: newStats['payments'] || 0,
-        });
+          for (const item of tables) {
+            const { count, error } = await supabase
+              .from(item.table)
+              .select('*', { count: 'exact', head: true });
+            newStats[item.key] = error ? 0 : count || 0;
+          }
+        } 
+        // 3. ICT Business School
+        else if (site.includes('ictbusinessschool') || site === 'ibs' || site === 'ict-business') {
+          const { count, error } = await supabase
+            .from('ibs_contacts')
+            .select('*', { count: 'exact', head: true });
+          newStats.contact = error ? 0 : count || 0;
+        } 
+        // 4. IDT Pakistan
+        else if (site.includes('idt') || site === 'idtpakistan') {
+          const { count, error } = await supabase
+            .from('idt_contacts')
+            .select('*', { count: 'exact', head: true });
+          newStats.contact = error ? 0 : count || 0;
+        } 
+        // 5. Default -> ICT Business UK (Prefix updated here)
+        else {
+          const tables = [
+            { key: 'contact', table: `${site}_contact` },
+            { key: 'courses', table: `${site}_courses` },
+            { key: 'customers', table: `${site}_customers` },
+            { key: 'orders', table: `${site}_orders` },
+            { key: 'orderItems', table: `${site}_order_items` },
+            { key: 'payments', table: `${site}_payments` },
+          ];
+          
+
+          for (const item of tables) {
+            const { count, error } = await supabase
+              .from(item.table)
+              .select('*', { count: 'exact', head: true });
+            newStats[item.key] = error ? 0 : count || 0;
+          }
+        }
       } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
+        console.error('Error fetching dashboard counts:', err);
       } finally {
+        setStats(newStats);
         setLoading(false);
       }
     }
 
-    fetchCounts();
-  }, [currentSite]);
+    fetchDashboardCounts();
+  }, [site, supabase]);
 
-  return (
-    <div className="space-y-6">
-      {/* Unified Banner Card with Clean Favicon (No Box/Border) */}
-      <div className={`bg-white p-6 rounded-2xl shadow-sm border ${site.theme.borderAccent} flex flex-col md:flex-row items-center justify-between gap-6`}>
-        
-        {/* Left Side: Only Clean Favicon & Info (No Wrapper Div/Border) */}
-        <div className="flex items-center gap-6 w-full md:w-auto">
-          {/* Direct Favicon without border and background */}
-          <div className="shrink-0">
-            <Image 
-              src={site.logoUrl} 
-              alt={site.name} 
-              width={56} 
-              height={56} 
-              className="object-contain h-16 w-16"
-            />
-          </div>
-
-          {/* Text Info */}
-          <div className="flex flex-col text-left">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Overview Panel</span>
-            <h1 className="text-2xl font-black text-gray-900 mt-0.5">{site.name} Dashboard</h1>
-          </div>
+  // Render UI based on active site
+  if (site === 'ict' || site.includes('ict.edu')) {
+    return (
+      <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">ICT Education Dashboard</h1>
+          <p className="text-sm text-slate-500">Real-time overview of student requests, complaints and leads</p>
         </div>
-
-        {/* Right Side: Dynamic Theme Badge */}
-        <div className="flex items-center shrink-0 w-full md:w-auto justify-end">
-          <div className={`px-4 py-2.5 rounded-xl text-sm font-bold text-white ${site.theme.primaryBg} shadow-md`}>
-           {site.name}
-          </div>
-        </div>
-
-      </div>
-
-      {/* Stats Cards Section */}
-      {loading ? (
-        <div className="flex justify-center items-center py-20 bg-white rounded-2xl border border-gray-200">
-          <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
-        </div>
-      ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Contact Leads</span>
-            <h3 className="text-3xl font-black text-gray-900 mt-2">{stats.contacts}</h3>
-            <span className={`text-xs font-semibold ${site.theme.textAccent} bg-gray-50 px-2 py-0.5 rounded inline-block mt-1`}>Total Inquiries</span>
-          </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Courses</span>
-            <h3 className="text-3xl font-black text-gray-900 mt-2">{stats.courses}</h3>
-            <span className={`text-xs font-semibold ${site.theme.textAccent} bg-gray-50 px-2 py-0.5 rounded inline-block mt-1`}>Available Courses</span>
-          </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Customers</span>
-            <h3 className="text-3xl font-black text-gray-900 mt-2">{stats.customers}</h3>
-            <span className={`text-xs font-semibold ${site.theme.textAccent} bg-gray-50 px-2 py-0.5 rounded inline-block mt-1`}>Registered Users</span>
-          </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Orders</span>
-            <h3 className="text-3xl font-black text-gray-900 mt-2">{stats.orders}</h3>
-            <span className={`text-xs font-semibold ${site.theme.textAccent} bg-gray-50 px-2 py-0.5 rounded inline-block mt-1`}>Placed Orders</span>
-          </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Order Items</span>
-            <h3 className="text-3xl font-black text-gray-900 mt-2">{stats.orderItems}</h3>
-            <span className={`text-xs font-semibold ${site.theme.textAccent} bg-gray-50 px-2 py-0.5 rounded inline-block mt-1`}>Purchased Items</span>
-          </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Payments</span>
-            <h3 className="text-3xl font-black text-gray-900 mt-2">{stats.payments}</h3>
-            <span className={`text-xs font-semibold ${site.theme.textAccent} bg-gray-50 px-2 py-0.5 rounded inline-block mt-1`}>Recorded Transactions</span>
-          </div>
+          <StatCard title="Certificate Requests" value={loading ? '...' : stats.certificates || 0} />
+          <StatCard title="Complaints" value={loading ? '...' : stats.complaints || 0} />
+          <StatCard title="Feedback Submission" value={loading ? '...' : stats.feedback || 0} />
+          <StatCard title="Hard Copy Request" value={loading ? '...' : stats.hardCopy || 0} />
+          <StatCard title="ICT Leads" value={loading ? '...' : stats.leads || 0} />
         </div>
-      )}
+      </div>
+    );
+  }
+
+  if (site.includes('baco') || site === 'bacoconsultants') {
+    return (
+      <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">BACO Consultants Dashboard</h1>
+          <p className="text-sm text-slate-500">Real-time overview of BACO applications and contact inquiries</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <StatCard title="BACO Applications" value={loading ? '...' : stats.applications || 0} />
+          <StatCard title="Contact Inquiries" value={loading ? '...' : stats.contact || 0} />
+        </div>
+      </div>
+    );
+  }
+
+  if (site.includes('ictbusinessschool') || site === 'ibs' || site === 'ict-business') {
+    return (
+      <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">ICT Business School Dashboard</h1>
+          <p className="text-sm text-slate-500">Real-time overview of contact inquiries</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <StatCard title="Contact Inquiries" value={loading ? '...' : stats.contact || 0} />
+        </div>
+      </div>
+    );
+  }
+
+  if (site.includes('idt') || site === 'idtpakistan') {
+    return (
+      <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">IDT Pakistan Dashboard</h1>
+          <p className="text-sm text-slate-500">Real-time overview of contact inquiries</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <StatCard title="Contact Inquiries" value={loading ? '...' : stats.contact || 0} />
+        </div>
+      </div>
+    );
+  }
+
+  // Default -> ICT Business UK
+  return (
+    <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">ICT Business UK Dashboard</h1>
+        <p className="text-sm text-slate-500">Real-time overview of courses, customers, orders, and payments</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard title="Contact" value={loading ? '...' : stats.contact || 0} />
+        <StatCard title="Courses" value={loading ? '...' : stats.courses || 0} />
+        <StatCard title="Customers" value={loading ? '...' : stats.customers || 0} />
+        <StatCard title="Orders" value={loading ? '...' : stats.orders || 0} />
+        <StatCard title="Order Items" value={loading ? '...' : stats.orderItems || 0} />
+        <StatCard title="Payments" value={loading ? '...' : stats.payments || 0} />
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value }: { title: string; value: number | string }) {
+  return (
+    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <p className="text-xs font-semibold text-slate-400 uppercase">{title}</p>
+      <p className="text-3xl font-bold text-slate-900 mt-2">{value}</p>
     </div>
   );
 }

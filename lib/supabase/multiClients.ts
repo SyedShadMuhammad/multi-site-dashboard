@@ -1,17 +1,56 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Yeh client dashboard ke liye hai jo RLS ko bypass karke sara live data securely layega
-export function getSupabaseAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_MAIN_URL!;
-  // Yahan hum Service Role Key use kar rahe hain taake RLS policy block na kare
-  const supabaseServiceKey = process.env.SUPABASE_MAIN_SERVICE_ROLE_KEY!;
+// Caching clients to prevent "Multiple GoTrueClient instances detected" warning
+const clientCache: Record<string, SupabaseClient> = {};
 
-  return createClient(supabaseUrl, supabaseServiceKey);
+export function getSupabaseAdminClient(siteId: string = '') {
+  const normalizedSite = siteId.toLowerCase().trim();
+  const cacheKey = `admin_${normalizedSite}`;
+
+  if (clientCache[cacheKey]) {
+    return clientCache[cacheKey];
+  }
+
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  let serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  if (normalizedSite.includes('idt') || normalizedSite === 'idtpakistan') {
+    url = process.env.NEXT_PUBLIC_IDT_SUPABASE_URL!;
+    serviceKey = process.env.IDT_SUPABASE_SERVICE_ROLE_KEY!;
+  }
+
+  if (!url || !serviceKey) {
+    throw new Error('Supabase URL or Service Role Key is missing in .env.local');
+  }
+
+  const client = createClient(url, serviceKey, {
+    auth: { persistSession: false },
+  });
+  clientCache[cacheKey] = client;
+  return client;
 }
 
-// Purana function agar kahin aur use ho raha hai
-export function getSupabaseClientForSite(siteId: string) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_MAIN_URL!;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_MAIN_ANON_KEY!;
-  return createClient(supabaseUrl, supabaseKey);
+export function getSupabaseClientForSite(siteId: string = '') {
+  const normalizedSite = siteId.toLowerCase().trim();
+  const cacheKey = `anon_${normalizedSite}`;
+
+  if (clientCache[cacheKey]) {
+    return clientCache[cacheKey];
+  }
+
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  let key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  if (normalizedSite.includes('idt') || normalizedSite === 'idtpakistan') {
+    url = process.env.NEXT_PUBLIC_IDT_SUPABASE_URL!;
+    key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  }
+
+  if (!url || !key) {
+    throw new Error('Supabase URL or Anon Key is missing in .env.local');
+  }
+
+  const client = createClient(url, key);
+  clientCache[cacheKey] = client;
+  return client;
 }
