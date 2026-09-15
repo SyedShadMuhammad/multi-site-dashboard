@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SITES_CONFIG } from '@/config/sites.config';
 import { Bell, Menu, ChevronDown, CheckCircle2, UserPlus, FileText, Mail, Search } from 'lucide-react';
+import { getSupabaseClientForSite } from '@/lib/supabase/multiClients';
 
 interface HeaderProps {
   currentSite: string;
@@ -22,39 +23,6 @@ interface NotificationItem {
   type: 'lead' | 'admission' | 'contact' | 'career';
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: '1',
-    siteId: 'ict',
-    siteName: 'ICT Education',
-    title: 'New Sales Lead',
-    description: 'A new enterprise inquiry has been submitted.',
-    time: '5m ago',
-    link: '/dashboard/sales-leads?site=ict',
-    type: 'lead',
-  },
-  {
-    id: '2',
-    siteId: 'ict',
-    siteName: 'ICT Education',
-    title: 'New Contact Message',
-    description: 'Tariq Jamil sent a course inquiry message.',
-    time: '25m ago',
-    link: '/dashboard/contact-submissions?site=ict',
-    type: 'contact',
-  },
-  {
-    id: '3',
-    siteId: 'baco',
-    siteName: 'Baco Portal',
-    title: 'New Admission Application',
-    description: 'Student registration form submitted.',
-    time: '2h ago',
-    link: '/dashboard/admissions?site=baco',
-    type: 'admission',
-  },
-];
-
 export default function Header({ 
   currentSite, 
   onSiteChange, 
@@ -65,7 +33,7 @@ export default function Header({
   
   const [isOpen, setIsOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   // Get current search query from URL if available
   const currentSearch = searchParams.get('search') || '';
@@ -79,6 +47,49 @@ export default function Header({
   useEffect(() => {
     setSearchTerm(searchParams.get('search') || '');
   }, [searchParams]);
+
+  // Real-time Supabase Listener for Live Notifications
+  useEffect(() => {
+    const supabase = getSupabaseClientForSite(currentSite);
+
+    // Dynamic table mapping based on active site
+    let tableName = 'contact_messages_IDT';
+    let linkPath = `/dashboard/idtpakistan/contact?site=${currentSite}`;
+    
+    if (currentSite === 'ict') {
+      tableName = 'ict_leads';
+      linkPath = `/dashboard/ict/leads?site=ict`;
+    } else if (currentSite.includes('baco')) {
+      tableName = 'baco_applications';
+      linkPath = `/dashboard/bacoconsultants/applications?site=${currentSite}`;
+    }
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: tableName },
+        (payload) => {
+          const newRecord: NotificationItem = {
+            id: Date.now().toString(),
+            siteId: currentSite,
+            siteName: currentSiteData.name,
+            title: `New Entry in ${currentSiteData.name}`,
+            description: `A new record has been added successfully.`,
+            time: 'Just now',
+            link: linkPath,
+            type: 'lead',
+          };
+
+          setNotifications((prev) => [newRecord, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentSite, currentSiteData]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -96,7 +107,6 @@ export default function Header({
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     
-    // Update URL query params dynamically without losing current site
     const params = new URLSearchParams(searchParams.toString());
     if (value.trim()) {
       params.set('search', value);
@@ -128,7 +138,6 @@ export default function Header({
 
   return (
     <header className="h-20 bg-white border-b border-gray-200 px-4 md:px-8 flex items-center justify-between shrink-0 relative z-40 gap-4">
-      {/* Left Side: Mobile Menu Button & Title */}
       <div className="flex items-center gap-3 shrink-0">
         <button 
           onClick={onToggleSidebar}
@@ -140,7 +149,6 @@ export default function Header({
         <span className="text-xs sm:text-sm font-bold text-gray-700 hidden sm:inline">Centralized Dashboard</span>
       </div>
 
-      {/* Middle: Global Search Bar */}
       <div className="flex-1 max-w-md mx-2">
         <div className="relative">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
@@ -164,10 +172,9 @@ export default function Header({
         </div>
       </div>
 
-      {/* Right Side: Notifications & Portal Switcher Dropdown */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-        
-        {/* Notifications Bell Dropdown */}
+        <div className="relative" ref={notifRef}>
+ {/* Notifications Bell Dropdown */}
         <div className="relative" ref={notifRef}>
           <button 
             onClick={() => setNotifOpen(!notifOpen)}
@@ -232,7 +239,55 @@ export default function Header({
           )}
         </div>
 
-        {/* Custom Portal Switcher Dropdown */}
+          {notifOpen && (
+            <div className="fixed inset-x-4 top-24 sm:absolute sm:inset-x-auto sm:right-0 sm:mt-2 sm:w-96 bg-white border border-gray-200 rounded-3xl sm:rounded-2xl shadow-2xl sm:shadow-xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">Notifications</span>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] bg-emerald-50 text-emerald-600 font-semibold px-2 py-0.5 rounded-full">
+                    {notifications.length} New
+                  </span>
+                  <button 
+                    onClick={() => setNotifOpen(false)} 
+                    className="sm:hidden text-gray-400 hover:text-gray-600 text-sm px-1.5 py-0.5 rounded-lg bg-gray-50 border border-gray-200"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              <div className="max-h-[calc(70vh-100px)] sm:max-h-80 overflow-y-auto divide-y divide-gray-50">
+                {notifications.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-gray-400">No new notifications</div>
+                ) : (
+                  notifications.map((notif) => (
+                    <button
+                      key={notif.id}
+                      onClick={() => handleNotificationClick(notif)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-start gap-3 group"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-white group-hover:shadow-sm transition-all">
+                        {getIconByType(notif.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-bold text-gray-900 truncate">{notif.title}</p>
+                          <span className="text-[10px] text-gray-400 shrink-0">{notif.time}</span>
+                        </div>
+                        <p className="text-xs text-gray-600 truncate mt-0.5">{notif.description}</p>
+                        <span className="inline-block mt-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                          {notif.siteName}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="relative pl-1 sm:pl-2 border-l border-gray-200" ref={dropdownRef}>
           <button
             onClick={() => setIsOpen(!isOpen)}

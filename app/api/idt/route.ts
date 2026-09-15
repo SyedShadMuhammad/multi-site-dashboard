@@ -1,24 +1,24 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClientForSite } from '@/lib/supabase/multiClients';
 
-const idtSupabaseUrl = process.env.NEXT_PUBLIC_IDT_SUPABASE_URL || '';
-const idtKey = process.env.IDT_SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_IDT_SUPABASE_ANON_KEY || '';
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const supabase = createClient(idtSupabaseUrl, idtKey);
+    const supabase = getSupabaseClientForSite('idtpakistan');
 
-    // Apni IDT ki table ka naam yahan likhein (jaise contact_messages_IDT)
-    const { data, error } = await supabase
+    // Supabase table name check kar lena (jaise 'contact_messages_IDT' ya 'idt_contacts')
+    const { data, error, count } = await supabase
       .from('contact_messages_IDT')
-      .select('*');
+      .select('*', { count: 'exact' });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ 
+      data: data || [], 
+      count: count !== null ? count : (data ? data.length : 0) 
+    });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Server Error' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }

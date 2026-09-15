@@ -41,9 +41,10 @@ export function getSupabaseClientForSite(siteId: string = '') {
   let url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   let key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+  // IDT ke liye explicit check (agar site mein 'idt' ya 'idtpakistan' ho)
   if (normalizedSite.includes('idt') || normalizedSite === 'idtpakistan') {
     url = process.env.NEXT_PUBLIC_IDT_SUPABASE_URL!;
-    key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    key = process.env.NEXT_PUBLIC_IDT_SUPABASE_ANON_KEY!;
   }
 
   if (!url || !key) {
