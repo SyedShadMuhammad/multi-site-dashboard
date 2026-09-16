@@ -1,3 +1,4 @@
+// app/dashboard/bacoconsultants/applications/page.tsx
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -7,6 +8,7 @@ import { Briefcase } from 'lucide-react';
 export default function BacoApplicationsPage() {
   const searchParams = useSearchParams();
   const site = searchParams.get('site') || 'bacoconsultants';
+  const searchQuery = searchParams.get('search')?.toLowerCase() || '';
   const supabase = getSupabaseClientForSite(site);
 
   const [applications, setApplications] = useState<any[]>([]);
@@ -18,7 +20,7 @@ export default function BacoApplicationsPage() {
       try {
         const { data, error } = await supabase
           .from('baco_applications')
-          .select('*')
+          .select('*');
         //   .order('id', { ascending: false });
 
         if (error) {
@@ -36,6 +38,22 @@ export default function BacoApplicationsPage() {
     fetchApplications();
   }, [supabase]);
 
+  // Client-side search filtering based on the search query parameter
+  const filteredApplications = applications.filter((item) => {
+    if (!searchQuery) return true;
+    const fullName = String(item['Full Name'] || item.full_name || '').toLowerCase();
+    const email = String(item['Email'] || item.email || '').toLowerCase();
+    const phone = String(item['Phone'] || item.phone || '').toLowerCase();
+    const position = String(item['Position'] || item.position || '').toLowerCase();
+
+    return (
+      fullName.includes(searchQuery) ||
+      email.includes(searchQuery) ||
+      phone.includes(searchQuery) ||
+      position.includes(searchQuery)
+    );
+  });
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -49,7 +67,7 @@ export default function BacoApplicationsPage() {
           </div>
         </div>
         <div className="bg-slate-100 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-700">
-          Total Records: {applications.length}
+          Total Records: {filteredApplications.length}
         </div>
       </div>
 
@@ -71,14 +89,14 @@ export default function BacoApplicationsPage() {
                     Loading applications...
                   </td>
                 </tr>
-              ) : applications.length === 0 ? (
+              ) : filteredApplications.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="p-8 text-center text-slate-500">
-                    No applications found.
+                    {searchQuery ? `No applications found matching "${searchQuery}".` : 'No applications found.'}
                   </td>
                 </tr>
               ) : (
-                applications.map((item, index) => (
+                filteredApplications.map((item, index) => (
                   <tr key={item.id || index} className="hover:bg-slate-50">
                     <td className="p-4 font-medium text-slate-900">{item['Full Name'] || item.full_name || 'N/A'}</td>
                     <td className="p-4 text-slate-600">{item['Email'] || item.email || 'N/A'}</td>
